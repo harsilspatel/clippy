@@ -13,35 +13,53 @@ import Foundation
 
 class ViewController: NSViewController {
     
-    @IBOutlet weak var copyField: NSTextField!
-    @IBOutlet weak var pasteField: NSTextField!
+    var history: [String] = []
+    let pasteboard = NSPasteboard.general
     
-    var hotKey: HotKey? {
+    var copyKey: HotKey? {
         didSet {
-            guard let hotKey = hotKey else {
+            guard let copyKey = copyKey else {
                 print("Unregistered")
                 return
             }
             
             print("Registered")
             
-            hotKey.keyDownHandler = {
-//                [weak self] in
-                
-                print("Pressed at \(Date())")
-                sleep(2)
-                print(self.getHighlightedText())
-                self.addToQueue()
+            copyKey.keyDownHandler = {
+                let myText: String = self.getHighlightedText() as! String
+                print("\(myText) copied at \(Date())")
+                self.history.append(myText)
             }
         }
     }
     
-    let pasteboard = NSPasteboard.general
-    var history: [String] = []
+    var pasteKey: HotKey? {
+        didSet {
+            guard let pasteKey = pasteKey else {
+                print("Unregistered")
+                return
+            }
+            
+            print("Registered")
+            
+            pasteKey.keyDownHandler = {
+                if self.history.count > 0 {
+                    let myText = self.history.removeFirst()
+                    self.pasteboard.clearContents()
+                    self.pasteboard.setString(myText, forType: NSPasteboard.PasteboardType.string)
+                    print("\(myText) pasted at \(Date())")
+                    self.insertText(text: myText)
+                }
+            }
+        }
+    }
+    
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        register(self)
+        copyKey = HotKey(keyCombo: KeyCombo(key: .c, modifiers: [.control]))
+        pasteKey = HotKey(keyCombo: KeyCombo(key: .v, modifiers: [.control]))
         // Do any additional setup after loading the view.
     }
 
@@ -51,53 +69,34 @@ class ViewController: NSViewController {
         }
     }
     
-   
-    @IBAction func copyToClipboard(_ sender: Any) {
-        addToQueue()
-    }
-    
-    func addToQueue() {
-        let text = copyField.stringValue
-        
-        // copying the string to the system pasteboard
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: NSPasteboard.PasteboardType.string)
-        
-        history.append(text)
-    }
-    
-    @IBAction func pasteToClipboard(_ sender: Any) {
-        if history.count > 0 {
-            pasteField.stringValue += " " + history.removeFirst()
-        }
-        
-    }
-    
-    func unregister(_ sender: Any?) {
-        hotKey = nil
-    }
-    
-    func register(_ sender: Any?) {
-        hotKey = HotKey(keyCombo: KeyCombo(key: .c, modifiers: [.control]))
-    }
-    
     func getHighlightedText() -> AnyObject? {
         let systemWideElement = AXUIElementCreateSystemWide()
         var focusedElement: AnyObject?
         let focusedCode = AXUIElementCopyAttributeValue(systemWideElement, "AXFocusedUIElement" as CFString, &focusedElement)
-//        print(focusedCode)
-//        print(AXError.success)
-//        print(focusedCode == AXError.success)
+        print(focusedCode == AXError.success)
         if (focusedCode == AXError.success) {
             var selectedText: AnyObject?
             let textCode = AXUIElementCopyAttributeValue(focusedElement as! AXUIElement, "AXSelectedText" as CFString, &selectedText)
-//            print(textCode)
+            print(textCode)
             if (textCode == AXError.success) {
+                print(selectedText)
                 return selectedText
             }
         }
         return nil
     }
     
+    func insertText(text: String) {
+        let systemWideElement = AXUIElementCreateSystemWide()
+        var focusedElement: AnyObject?
+        let focusedCode = AXUIElementCopyAttributeValue(systemWideElement, "AXFocusedUIElement" as CFString, &focusedElement)
+        if (focusedCode == AXError.success) {
+            var selectedText: AnyObject?
+            let textCode = AXUIElementCopyAttributeValue(focusedElement as! AXUIElement, "AXSelectedText" as CFString, &selectedText)
+            if (textCode == AXError.success) {
+                AXUIElementSetAttributeValue(focusedElement as! AXUIElement, "AXSelectedText" as CFString, text as CFTypeRef)
+            }
+        }
+    }
 }
 

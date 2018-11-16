@@ -145,7 +145,22 @@ import Foundation
 //}
 
 
-func getHighlightedText() -> AnyObject? {
+//func getHighlightedText() -> AnyObject? {
+//    let systemWideElement = AXUIElementCreateSystemWide()
+//    var focusedElement: AnyObject?
+//    let focusedCode = AXUIElementCopyAttributeValue(systemWideElement, "AXFocusedUIElement" as CFString, &focusedElement)
+//    if (focusedCode == AXError.success) {
+//        var selectedText: AnyObject?
+//        let textCode = AXUIElementCopyAttributeValue(focusedElement as! AXUIElement, "AXSelectedText" as CFString, &selectedText)
+//        if (textCode == AXError.success) {
+//            return selectedText
+//        }
+//    }
+//    return nil
+//}
+//print(getHighlightedText())
+
+func insertText(text: String) {
     let systemWideElement = AXUIElementCreateSystemWide()
     var focusedElement: AnyObject?
     let focusedCode = AXUIElementCopyAttributeValue(systemWideElement, "AXFocusedUIElement" as CFString, &focusedElement)
@@ -153,9 +168,12 @@ func getHighlightedText() -> AnyObject? {
         var selectedText: AnyObject?
         let textCode = AXUIElementCopyAttributeValue(focusedElement as! AXUIElement, "AXSelectedText" as CFString, &selectedText)
         if (textCode == AXError.success) {
-            return selectedText
+            AXUIElementSetAttributeValue(focusedElement as! AXUIElement, "AXSelectedText" as CFString, text as CFTypeRef)
         }
     }
-    return nil
 }
-print(getHighlightedText())
+
+let pasteboard = NSPasteboard.general
+let myText = pasteboard.string(forType: .string)
+insertText(text: myText!)
+
