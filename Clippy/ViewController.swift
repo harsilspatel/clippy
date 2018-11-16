@@ -8,6 +8,8 @@
 
 import Cocoa
 import HotKey
+import Foundation
+
 
 class ViewController: NSViewController {
     
@@ -23,8 +25,13 @@ class ViewController: NSViewController {
             
             print("Registered")
             
-            hotKey.keyDownHandler = { [weak self] in
+            hotKey.keyDownHandler = {
+//                [weak self] in
+                
                 print("Pressed at \(Date())")
+                sleep(2)
+                print(self.getHighlightedText())
+                self.addToQueue()
             }
         }
     }
@@ -73,6 +80,24 @@ class ViewController: NSViewController {
     func register(_ sender: Any?) {
         hotKey = HotKey(keyCombo: KeyCombo(key: .c, modifiers: [.control]))
     }
-
+    
+    func getHighlightedText() -> AnyObject? {
+        let systemWideElement = AXUIElementCreateSystemWide()
+        var focusedElement: AnyObject?
+        let focusedCode = AXUIElementCopyAttributeValue(systemWideElement, "AXFocusedUIElement" as CFString, &focusedElement)
+//        print(focusedCode)
+//        print(AXError.success)
+//        print(focusedCode == AXError.success)
+        if (focusedCode == AXError.success) {
+            var selectedText: AnyObject?
+            let textCode = AXUIElementCopyAttributeValue(focusedElement as! AXUIElement, "AXSelectedText" as CFString, &selectedText)
+//            print(textCode)
+            if (textCode == AXError.success) {
+                return selectedText
+            }
+        }
+        return nil
+    }
+    
 }
 
